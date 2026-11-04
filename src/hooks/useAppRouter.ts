@@ -1,10 +1,10 @@
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 export function useAppRouter() {
     const router = useRouter();
 
     const navigateToScan = () => {
-        router.push('/StartScanTile' as Href);
+        router.push('/scan');
     };
 
     return {
