@@ -1,6 +1,5 @@
-import { Text, View, StyleSheet, Pressable } from 'react-native';
-
-import { colors, radii, spacing } from '@/theme/tokens';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 
 interface StartScanTileProps {
     onPress?: () => void;
@@ -8,18 +7,8 @@ interface StartScanTileProps {
 
 export const StartScanTile = ({ onPress }: StartScanTileProps) => {
     return (
-        <Pressable onPress={onPress}>
-            <View style={styles.container}>
-                <Text>&quot;Start Scan&quot;</Text>
-            </View>
-        </Pressable>
+        <Card tone="highlight">
+            <Button label="Start today's scan" onPress={onPress} />
+        </Card>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        padding: spacing.lg,
-        backgroundColor: colors.inactive,
-        borderRadius: radii.sm,
-    },
-});
