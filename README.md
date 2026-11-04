@@ -19,6 +19,7 @@ Press `i` for the iOS Simulator. The project uses a development build workflow u
 - `npm run lint`: ESLint with Expo's config (`eslint-config-expo`)
 - `npm test`: Jest with the `jest-expo` preset
 - `npm run verify`: typecheck, lint, and tests. Fails if any step fails.
+- `npm run screenshots`: exports the web build and captures each main route (`/`, `/journal`, `/calendar`, `/insights`, `/more`, `/scan`) at 390 × 844, 1× scale. Pass routes to capture only those: `npm run screenshots -- journal more`. Images go to `$OOVA_RUN_DIR` when set, otherwise `.screenshots/`. Needs the Playwright Chromium browser (`npx playwright install chromium`).
 
 ## Structure
 

@@ -11,6 +11,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "screenshots": "node scripts/screenshots.mjs",
     "verify": "npm run typecheck && npm run lint && npm test"
   },
   "jest": {

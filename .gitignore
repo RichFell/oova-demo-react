@@ -38,6 +38,9 @@ yarn-error.*
 
 example
 
+# screenshots
+.screenshots/
+
 # generated native folders
 /ios
 /android
