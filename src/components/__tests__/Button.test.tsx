@@ -11,7 +11,7 @@ function propsOf(element: ReturnType<typeof Button>) {
 
 function styleOf(element: ReturnType<typeof Button>, pressed = false) {
   const style = propsOf(element).style as (state: PressableStateCallbackType) => unknown;
-  return StyleSheet.flatten(style({ pressed }) as never);
+  return StyleSheet.flatten(style({ pressed, hovered: false } as PressableStateCallbackType) as never);
 }
 
 describe('Button', () => {
