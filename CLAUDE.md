@@ -22,6 +22,7 @@ Don't skip, weaken, or delete tests, and don't change the `verify` script withou
 - `src/data/plan.ts`: scan plan builder. Supports only the 30-day plan.
 - `src/data/sample.ts`: fictional profile, chart, and unlock data
 - Tests live in `__tests__/` folders beside the code they cover.
+- `useAppRouter` should be used to wrap Expo Router logic to allow easy injection of different views dependent on settings.
 
 ## Sample-data rules
 
