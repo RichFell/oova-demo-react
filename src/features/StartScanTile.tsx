@@ -8,7 +8,7 @@ export const StartScanTile = ({ onPress }: StartScanTileProps) => {
     return (
         <Pressable onPress={onPress}>
             <View style={styles.container}>
-                <Text>"Start Scan"</Text>
+                <Text>&quot;Start Scan&quot;</Text>
             </View>
         </Pressable>
     );

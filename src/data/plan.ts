@@ -1,6 +1,7 @@
 export type StripType = 'lh-pdg' | 'e3g';
 
-export type PlanLength = 15 | 30;
+/** Only the 30-day schedule is supported. The 15-day option has no confirmed control. */
+export type PlanLength = 30;
 
 export interface PlanInput {
   /** Local calendar date in YYYY-MM-DD format. */
@@ -34,6 +35,10 @@ function addDays(isoDate: string, days: number): string {
 
 /** Builds the demo schedule: both strip types on every day of the plan. */
 export function buildPlan({ startDate, lengthDays, typicalBleedDays }: PlanInput): ScanPlan {
+  if (lengthDays !== 30) {
+    throw new Error(`Unsupported plan length: ${lengthDays}. Only the 30-day plan is supported.`);
+  }
+
   const days = Array.from({ length: lengthDays }, (_, index): PlanDay => ({
     dayNumber: index + 1,
     date: addDays(startDate, index),
