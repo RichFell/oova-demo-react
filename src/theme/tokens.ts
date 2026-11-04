@@ -32,14 +32,25 @@ export const radii = { sm: 12, md: 22, pill: 999 } as const;
 
 export const sizes = { button: 56, tabBar: 72 } as const;
 
+/**
+ * Outfit is a stand-in for Oova's rounded type. The real font is unknown.
+ * Keys match the names registered with `useFonts` in `src/app/_layout.tsx`.
+ */
+export const fonts = {
+  regular: 'Outfit_400Regular',
+  medium: 'Outfit_500Medium',
+  semiBold: 'Outfit_600SemiBold',
+} as const;
+
 export const typography = {
-  title: { fontSize: 27, lineHeight: 31, fontWeight: '500' },
-  heading: { fontSize: 20, lineHeight: 24, fontWeight: '600' },
-  body: { fontSize: 15, lineHeight: 21, fontWeight: '400' },
+  title: { fontSize: 27, lineHeight: 31, fontWeight: '500', fontFamily: fonts.medium },
+  heading: { fontSize: 20, lineHeight: 24, fontWeight: '600', fontFamily: fonts.semiBold },
+  body: { fontSize: 15, lineHeight: 21, fontWeight: '400', fontFamily: fonts.regular },
   label: {
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '600',
+    fontFamily: fonts.semiBold,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
@@ -47,6 +58,7 @@ export const typography = {
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '600',
+    fontFamily: fonts.semiBold,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
