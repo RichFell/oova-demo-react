@@ -3,6 +3,7 @@ import { buildPlan, type PlanInput } from '../plan';
 const input: PlanInput = {
   startDate: '2026-11-03',
   lengthDays: 30,
+  lastPeriodStart: '2026-11-03',
   typicalBleedDays: 5,
 };
 
@@ -56,6 +57,18 @@ describe('buildPlan', () => {
       long.days.map(({ date, strips }) => ({ date, strips })),
     );
     expect(short.stripCounts).toEqual(long.stripCounts);
+  });
+
+  it('moves period markers with the last period date without changing plan dates', () => {
+    const periodDays = (plan: ReturnType<typeof buildPlan>) =>
+      plan.days.filter((day) => day.expectedPeriodDay).map((day) => day.dayNumber);
+    const later = buildPlan({ ...input, lastPeriodStart: '2026-11-10' });
+    const earlier = buildPlan({ ...input, lastPeriodStart: '2026-10-31' });
+
+    expect(periodDays(later)).toEqual([8, 9, 10, 11, 12]);
+    expect(periodDays(earlier)).toEqual([1, 2]);
+    expect(later.days.map((day) => day.date)).toEqual(buildPlan(input).days.map((day) => day.date));
+    expect(earlier.startDate).toBe('2026-11-03');
   });
 
   it('rejects plan lengths other than 30 days', () => {

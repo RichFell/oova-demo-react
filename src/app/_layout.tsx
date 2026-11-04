@@ -9,6 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { DemoStateProvider } from '@/state/DemoStateProvider';
 import { colors, fonts } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -32,7 +33,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <DemoStateProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -40,6 +41,6 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}
       />
-    </>
+    </DemoStateProvider>
   );
 }

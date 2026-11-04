@@ -12,6 +12,7 @@ export const sampleProfile = {
 export const samplePlanInput: PlanInput = {
   startDate: sampleProfile.lastPeriodStart,
   lengthDays: 30,
+  lastPeriodStart: sampleProfile.lastPeriodStart,
   typicalBleedDays: sampleProfile.typicalBleedDays,
 };
 
