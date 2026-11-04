@@ -26,7 +26,7 @@ Today should show one clear next step. Replace the placeholder and complete `use
 ## Acceptance criteria
 
 - [ ] Hero shows the date, cycle day, plan day, today's strips, and usual time from state.
-- [ ] The primary button opens scan setup on Manual.
+- [ ] The primary button opens scan setup (Guided by default).
 - [ ] Next five days shows both strip tokens for each day.
 - [ ] Chart lock shows remaining scans from state.
 - [ ] The bottom action stays above the tab bar on small iPhones.
