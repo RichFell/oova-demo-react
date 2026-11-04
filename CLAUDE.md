@@ -9,9 +9,15 @@ Expo SDK 58 app for an unofficial Oova concept demo. Tickets and docs live in th
 - `npm run lint`: `expo lint` with `eslint-config-expo` (see `eslint.config.js`)
 - `npm test`: Jest with the `jest-expo` preset (configured in `package.json`)
 - `npx expo install --check`: confirms dependency versions match SDK 58
+- `npm run screenshots [-- <route>...]`: captures Expo web routes at 390 × 844 (1× scale) into `$OOVA_RUN_DIR`, or `.screenshots/` when unset
 - Add dependencies only with `npx expo install` (use `--dev` for dev dependencies).
 
 Don't skip, weaken, or delete tests, and don't change the `verify` script without a ticket.
+
+## Screenshots
+
+- UI tickets: capture only the routes you changed, for example `npm run screenshots -- journal more`. Run it once, before finishing, then open and inspect those images.
+- Review step: don't capture or open screenshots.
 
 ## Structure
 
