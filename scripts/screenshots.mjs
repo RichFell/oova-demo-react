@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { chromium } from '@playwright/test';
 
 const ROUTES = ['/', '/journal', '/calendar', '/insights', '/more', '/scan'];
@@ -67,7 +67,7 @@ function serve(rootDir) {
     const server = createServer((req, res) => {
         const pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://localhost').pathname);
         const base = normalize(join(root, pathname));
-        if (!base.startsWith(root)) {
+        if (base !== root && !base.startsWith(root + sep)) {
             res.writeHead(403).end();
             return;
         }
