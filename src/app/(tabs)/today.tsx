@@ -5,11 +5,7 @@ export const Today = () => {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView style={scrollViewStyles.container}>
-                <StartScanTile 
-                    onPress={() => {
-                        // Handle press event here
-                    }}
-                />
+                <StartScanTile/>
             </ScrollView>
         </SafeAreaView>
     );

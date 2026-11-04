@@ -16,10 +16,6 @@ export const StartScanTile = () => {
     );
 };
 
-// interface StartScanTileProps {
-//     onPress?: () => void;
-// }
-
 const styles = StyleSheet.create({
     container: {
         padding: 20,
