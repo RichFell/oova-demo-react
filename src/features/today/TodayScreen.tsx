@@ -15,7 +15,7 @@ export const TodayScreen = () => {
     const { heroEyebrow, heroTitle, heroBody, upcomingDays, chart } = useTodayViewModel();
 
     return (
-        <Screen scroll={false}>
+        <Screen scroll={false} edges={['top', 'left', 'right']} style={styles.screen}>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
                 <StartScanTile
                     eyebrow={heroEyebrow}
@@ -31,18 +31,22 @@ export const TodayScreen = () => {
                         remainingLabel={chart.remainingLabel}
                     />
                 )}
+                {/* Symptom logging is out of scope for this ticket, so the action is shown disabled. */}
+                <Button label="Log symptoms" variant="secondary" disabled />
             </ScrollView>
-            {/* Symptom logging is out of scope for this ticket, so the action is shown disabled. */}
-            <Button label="Log symptoms" variant="secondary" disabled />
         </Screen>
     );
 };
 
 const styles = StyleSheet.create({
+    screen: {
+        paddingBottom: 0,
+    },
     scroll: {
         flex: 1,
     },
     content: {
+        paddingBottom: spacing.lg,
         gap: spacing.lg,
     },
 });
