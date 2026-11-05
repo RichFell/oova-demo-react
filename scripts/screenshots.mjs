@@ -3,6 +3,7 @@
 // Usage:
 //   npm run screenshots                  # every main route
 //   npm run screenshots -- journal /more # only the listed routes
+//   npm run screenshots -- 'scan?mode=manual' # a route in a state set by its query params
 //
 // Output goes to $OOVA_RUN_DIR when set, otherwise .screenshots/.
 
@@ -30,19 +31,26 @@ const MIME_TYPES = {
     '.woff2': 'font/woff2',
 };
 
+// Keeps any query string, so a screen can open in a given state, like `scan?mode=manual`.
 function normalizeRoute(arg) {
-    const trimmed = arg.trim().replace(/^\/+|\/+$/g, '');
-    return trimmed === '' || trimmed === 'index' ? '/' : `/${trimmed}`;
+    const [path, query] = arg.trim().split('?');
+    const trimmed = path.replace(/^\/+|\/+$/g, '');
+    const route = trimmed === '' || trimmed === 'index' ? '/' : `/${trimmed}`;
+    return query ? `${route}?${query}` : route;
 }
 
+const pathOf = (route) => route.split('?')[0];
+
 function fileNameFor(route) {
-    return route === '/' ? 'index.png' : `${route.slice(1).replaceAll('/', '-')}.png`;
+    const [path, query] = route.split('?');
+    const name = path === '/' ? 'index' : path.slice(1).replaceAll('/', '-');
+    return `${name}${query ? `--${query.replace(/[^a-zA-Z0-9]+/g, '-')}` : ''}.png`;
 }
 
 function resolveRoutes(args) {
     if (args.length === 0) return ROUTES;
     const routes = [...new Set(args.map(normalizeRoute))];
-    const unknown = routes.filter((route) => !ROUTES.includes(route));
+    const unknown = routes.filter((route) => !ROUTES.includes(pathOf(route)));
     if (unknown.length > 0) {
         console.error(`Unknown route(s): ${unknown.join(', ')}. Known routes: ${ROUTES.join(', ')}`);
         process.exit(1);
