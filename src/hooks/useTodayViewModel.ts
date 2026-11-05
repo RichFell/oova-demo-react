@@ -6,7 +6,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const UPCOMING_DAY_COUNT = 5;
 
-const STRIP_TOKENS: Record<PlanStripType, StripType> = {
+export const STRIP_TOKENS: Record<PlanStripType, StripType> = {
   'lh-pdg': 'LH | PdG',
   e3g: 'E3G',
 };
