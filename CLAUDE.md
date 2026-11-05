@@ -17,6 +17,8 @@ Don't skip, weaken, or delete tests, and don't change the `verify` script withou
 ## Screenshots
 
 - UI tickets: capture only the routes you changed, for example `npm run screenshots -- journal more`. Run it once, before finishing, then open and inspect those images.
+- To capture a state inside a route, pass its query params, like `npm run screenshots -- 'scan?mode=manual'`. The screen must read that state from its route params. Never edit code temporarily to reach a state.
+- `OOVA_RUN_DIR` is already set in runner sessions, so don't prefix the command with it.
 - Review step: don't capture or open screenshots.
 
 ## Structure
@@ -28,7 +30,19 @@ Don't skip, weaken, or delete tests, and don't change the `verify` script withou
 - `src/data/plan.ts`: scan plan builder. Supports only the 30-day plan.
 - `src/data/sample.ts`: fictional profile, chart, and unlock data
 - Tests live in `__tests__/` folders beside the code they cover.
-- `useAppRouter` should be used to wrap Expo Router logic to allow easy injection of different views dependent on settings.
+
+## Testing
+
+- Test behavior: logic, view-model hooks, and components with state or interaction.
+- Don't write tests for types or interfaces. `npm run typecheck` covers them.
+- Don't write tests for presentational components that only map props or tokens to styles, such as `AppText`.
+
+## Routing
+
+- `useAppRouter` in `src/hooks/useAppRouter.ts` wraps Expo Router, so different views can be injected later depending on settings, tests, or previews.
+- Navigate only through it. Don't call `useRouter`, `router`, or `<Link>` from `expo-router` in screens or features.
+- Add each destination as a named intent on the hook, like `navigateToScan()`, and pass it down as a callback such as `onPress`. Features never import the router.
+- A screen that has states worth capturing, like a mode, reads its initial state from route params so `npm run screenshots -- 'scan?mode=manual'` can reach it.
 
 ## Sample-data rules
 
