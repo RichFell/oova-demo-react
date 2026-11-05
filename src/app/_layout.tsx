@@ -8,11 +8,17 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { DemoStateProvider } from '@/state/DemoStateProvider';
 import { colors, fonts } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
+
+// Keeps the tabs under a directly opened screen, so its native back button lands on Today.
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -39,8 +45,19 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
-        }}
-      />
+        }}>
+        {/* The native header gives scan setup the system back button, with Liquid Glass on iOS 26. */}
+        <Stack.Screen
+          name="scan"
+          options={{
+            headerShown: Platform.OS === 'ios',
+            title: '',
+            headerBackTitle: 'Back',
+            headerBackButtonDisplayMode: 'minimal',
+            headerTintColor: colors.navy,
+          }}
+        />
+      </Stack>
     </DemoStateProvider>
   );
 }
