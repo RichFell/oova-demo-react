@@ -1,13 +1,16 @@
 import { parseScanMode, useAppRouter } from '@/hooks/useAppRouter';
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn();
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace, canGoBack: mockCanGoBack }),
 }));
 
 describe('useAppRouter', () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(() => jest.clearAllMocks());
 
   it('opens scan setup', () => {
     useAppRouter().navigateToScan();
@@ -22,6 +25,20 @@ describe('useAppRouter', () => {
   it('opens the timer', () => {
     useAppRouter().navigateToTimer();
     expect(mockPush).toHaveBeenCalledWith('/timer');
+  });
+
+  it('returns to the previous screen', () => {
+    mockCanGoBack.mockReturnValue(true);
+    useAppRouter().navigateBack();
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('opens Today when there is no previous screen', () => {
+    mockCanGoBack.mockReturnValue(false);
+    useAppRouter().navigateBack();
+    expect(mockReplace).toHaveBeenCalledWith('/');
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });
 

@@ -23,8 +23,18 @@ export function useAppRouter() {
         router.push('/timer');
     };
 
+    // Without history, such as after opening a link directly, back lands on Today.
+    const navigateBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/');
+        }
+    };
+
     return {
         navigateToScan,
         navigateToTimer,
+        navigateBack,
     };
 }

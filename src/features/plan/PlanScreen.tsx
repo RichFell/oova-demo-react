@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { BackButton } from '@/components/BackButton';
 import { Screen } from '@/components/Screen';
 import { PlanAnswersCard } from '@/features/plan/PlanAnswersCard';
 import { PlanDayDetailsCard } from '@/features/plan/PlanDayDetailsCard';
@@ -24,11 +25,14 @@ export const PlanScreen = ({ initialMode = 'guided' }: PlanScreenProps) => {
     const { title, subtitle, days, showPeriodLegend, details, selectDay } = usePlanViewModel();
     const answers = usePlanAnswersViewModel();
     const { mode, setMode, manual } = useScanSetupViewModel(initialMode);
-    const { navigateToTimer } = useAppRouter();
+    const { navigateToTimer, navigateBack } = useAppRouter();
     const header = buildScanSetupHeader(mode, { title, subtitle });
 
     return (
         <Screen edges={['top', 'left', 'right']}>
+            <View style={styles.toolbar}>
+                <BackButton onPress={navigateBack} />
+            </View>
             <View style={styles.header}>
                 <StepProgress total={SCAN_STEP_COUNT} completed={header.completedSteps} />
                 <AppText variant="title" accessibilityRole="header" style={styles.title}>
@@ -52,6 +56,10 @@ export const PlanScreen = ({ initialMode = 'guided' }: PlanScreenProps) => {
 };
 
 const styles = StyleSheet.create({
+    toolbar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     header: {
         alignItems: 'center',
         gap: spacing.sm,
