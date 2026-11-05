@@ -21,10 +21,15 @@ interface PlanScreenProps {
 
 // Scan setup. In Guided, the schedule comes before any explanatory text.
 export const PlanScreen = ({ initialMode = 'guided' }: PlanScreenProps) => {
-    const { title, subtitle, days, showPeriodLegend, details, selectDay } = usePlanViewModel();
+    const plan = usePlanViewModel();
     const answers = usePlanAnswersViewModel();
-    const { mode, setMode, manual } = useScanSetupViewModel(initialMode);
+    const setup = useScanSetupViewModel(initialMode);
     const { navigateToTimer } = useAppRouter();
+    if (!plan || !answers || !setup) {
+        return null;
+    }
+    const { title, subtitle, days, showPeriodLegend, details, selectDay } = plan;
+    const { mode, setMode, manual } = setup;
     const header = buildScanSetupHeader(mode, { title, subtitle });
 
     return (

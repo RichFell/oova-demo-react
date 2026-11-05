@@ -1,9 +1,29 @@
-import { buildPlanViewModel } from '@/hooks/usePlanViewModel';
-import { createInitialDemoState, demoReducer, selectPlan, type DemoAction } from '@/state/demoState';
+import { buildPlanViewModel, usePlanViewModel } from '@/hooks/usePlanViewModel';
+import { createInitialDemoState, demoReducer, selectPlan, type DemoAction } from '@/services/mock/demoState';
+import { FakeTransport, PendingTransport, renderWithServices } from '@/services/testing';
 
 function planAfter(...actions: DemoAction[]) {
   return selectPlan(actions.reduce(demoReducer, createInitialDemoState()));
 }
+
+describe('usePlanViewModel', () => {
+  it('reads the plan through the plan service and selects the current plan day', async () => {
+    const plan = planAfter();
+    const { result } = await renderWithServices(usePlanViewModel, new FakeTransport());
+    expect(result.current).toMatchObject(buildPlanViewModel(plan, plan.startDate));
+  });
+
+  it('selects a tapped day', async () => {
+    const { result, act } = await renderWithServices(usePlanViewModel, new FakeTransport());
+    await act(() => result.current?.selectDay('2026-11-10'));
+    expect(result.current?.details.eyebrow).toBe('Day 8 · Nov 10');
+  });
+
+  it('tells the screen to render nothing until the queries have data', async () => {
+    const { result } = await renderWithServices(usePlanViewModel, new PendingTransport());
+    expect(result.current).toBeNull();
+  });
+});
 
 describe('buildPlanViewModel', () => {
   const plan = planAfter();

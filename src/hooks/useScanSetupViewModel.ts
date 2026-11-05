@@ -3,8 +3,9 @@ import { useState } from 'react';
 import type { StripType } from '@/components/StripToken';
 import type { PlanDay } from '@/data/plan';
 import type { ScanMode } from '@/hooks/useAppRouter';
+import { currentPlanDay } from '@/hooks/currentDay';
+import { usePlanQuery, useScansQuery } from '@/hooks/useDemoQueries';
 import { STRIP_TOKENS } from '@/hooks/useTodayViewModel';
-import { useDemoState } from '@/state/DemoStateProvider';
 
 /** Sample step, timer, scan, and completion. */
 export const SCAN_STEP_COUNT = 4;
@@ -39,14 +40,18 @@ export function buildManualScanSetup(currentPlanDay: Pick<PlanDay, 'strips'>): M
   };
 }
 
-// The mode is view state only and isn't saved.
+// The mode is view state only and isn't saved. Null until every query has data.
 export function useScanSetupViewModel(initialMode: ScanMode) {
-  const { currentPlanDay } = useDemoState();
+  const plan = usePlanQuery();
+  const scans = useScansQuery();
   const [mode, setMode] = useState<ScanMode>(initialMode);
+  if (!plan || !scans) {
+    return null;
+  }
 
   return {
     mode,
     setMode,
-    manual: buildManualScanSetup(currentPlanDay),
+    manual: buildManualScanSetup(currentPlanDay(plan.plan, scans.completedScans.length, scans.canCompleteScan)),
   };
 }

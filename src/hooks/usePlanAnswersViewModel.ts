@@ -1,13 +1,17 @@
 import { useState } from 'react';
 
 import type { StripType } from '@/components/StripToken';
-import { addDays, type ScanPlan } from '@/data/plan';
-import { sampleProfile } from '@/data/sample';
+import { addDays } from '@/data/plan';
+import { currentPlanDay } from '@/hooks/currentDay';
+import { usePlanQuery, useProfileQuery, useScansQuery } from '@/hooks/useDemoQueries';
 import { STRIP_TOKENS, formatShortDate } from '@/hooks/useTodayViewModel';
-import { useDemoState } from '@/state/DemoStateProvider';
-import type { DemoProfile } from '@/state/demoState';
+import type { PlanResponse, ProfileResponse } from '@/services/api';
+import { useServices } from '@/services/ServicesProvider';
 
-/** The last period date can move back this many days from the sample answer. */
+/**
+ * The last period date can move back this many days from the sample answer, which is the
+ * plan's start date.
+ */
 export const LAST_PERIOD_MAX_DAYS_BACK = 14;
 export const TYPICAL_BLEED_DAYS_MIN = 1;
 export const TYPICAL_BLEED_DAYS_MAX = 10;
@@ -30,21 +34,26 @@ export interface PlanAnswersViewModel {
 }
 
 interface PlanAnswersState {
-  profile: DemoProfile;
-  plan: ScanPlan;
+  profile: Pick<ProfileResponse, 'healthJourney' | 'regularCycles'>;
+  plan: PlanResponse;
   /** The demo's current date: the plan day being scanned. */
   today: string;
   editing: boolean;
 }
 
-export function earliestLastPeriodStart(): string {
-  return addDays(sampleProfile.lastPeriodStart, -LAST_PERIOD_MAX_DAYS_BACK);
+export function earliestLastPeriodStart(planStartDate: string): string {
+  return addDays(planStartDate, -LAST_PERIOD_MAX_DAYS_BACK);
 }
 
 /** The moved date, or null when it would leave the allowed range. */
-export function stepLastPeriodStart(current: string, days: number, today: string): string | null {
+export function stepLastPeriodStart(
+  current: string,
+  days: number,
+  today: string,
+  planStartDate: string,
+): string | null {
   const next = addDays(current, days);
-  return next >= earliestLastPeriodStart() && next <= today ? next : null;
+  return next >= earliestLastPeriodStart(planStartDate) && next <= today ? next : null;
 }
 
 /** The changed day count, or null when it would leave the allowed range. */
@@ -66,7 +75,8 @@ export function buildPlanAnswersViewModel({
   today,
   editing,
 }: PlanAnswersState): PlanAnswersViewModel {
-  const { lastPeriodStart, typicalBleedDays } = profile;
+  const { lastPeriodStart, typicalBleedDays } = plan;
+  const planStartDate = plan.plan.startDate;
 
   return {
     editing,
@@ -77,8 +87,8 @@ export function buildPlanAnswersViewModel({
     lastPeriodStarted: editing ? formatShortDate(lastPeriodStart) : formatLongDate(lastPeriodStart),
     typicalBleeding: pluralize(typicalBleedDays, 'day', 'days'),
     lastPeriodStepper: {
-      canDecrease: stepLastPeriodStart(lastPeriodStart, -1, today) !== null,
-      canIncrease: stepLastPeriodStart(lastPeriodStart, 1, today) !== null,
+      canDecrease: stepLastPeriodStart(lastPeriodStart, -1, today, planStartDate) !== null,
+      canIncrease: stepLastPeriodStart(lastPeriodStart, 1, today, planStartDate) !== null,
     },
     bleedingStepper: {
       canDecrease: stepTypicalBleedDays(typicalBleedDays, -1) !== null,
@@ -86,28 +96,38 @@ export function buildPlanAnswersViewModel({
     },
     strips: (['lh-pdg', 'e3g'] as const).map((strip) => ({
       type: STRIP_TOKENS[strip],
-      count: pluralize(plan.stripCounts[strip], 'strip', 'strips'),
+      count: pluralize(plan.plan.stripCounts[strip], 'strip', 'strips'),
     })),
   };
 }
 
-// Edit mode is view state only. Answers live in the in-memory demo state and reset on restart.
+// Edit mode is view state only. Answers are saved through the plan service, whose response
+// updates the plan's cache, so the timeline updates without another request. Null until every
+// query has data.
 export function usePlanAnswersViewModel() {
-  const { profile, plan, currentPlanDay, setLastPeriodStart, setTypicalBleedDays } = useDemoState();
+  const services = useServices();
+  const profile = useProfileQuery();
+  const plan = usePlanQuery();
+  const scans = useScansQuery();
   const [editing, setEditing] = useState(false);
-  const model = buildPlanAnswersViewModel({ profile, plan, today: currentPlanDay.date, editing });
+  if (!profile || !plan || !scans) {
+    return null;
+  }
+
+  const today = currentPlanDay(plan.plan, scans.completedScans.length, scans.canCompleteScan).date;
+  const model = buildPlanAnswersViewModel({ profile, plan, today, editing });
 
   const moveLastPeriod = (days: number) => {
-    const next = stepLastPeriodStart(profile.lastPeriodStart, days, currentPlanDay.date);
+    const next = stepLastPeriodStart(plan.lastPeriodStart, days, today, plan.plan.startDate);
     if (next) {
-      setLastPeriodStart(next);
+      void services.plan.updatePlan({ lastPeriodStart: next });
     }
   };
 
   const changeBleedDays = (days: number) => {
-    const next = stepTypicalBleedDays(profile.typicalBleedDays, days);
+    const next = stepTypicalBleedDays(plan.typicalBleedDays, days);
     if (next) {
-      setTypicalBleedDays(next);
+      void services.plan.updatePlan({ typicalBleedDays: next });
     }
   };
 

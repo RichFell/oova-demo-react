@@ -1,7 +1,12 @@
-import { sampleHormoneScans, sampleProfile } from '@/data/sample';
 import { DemoService, PlanService, ProfileService, ScanService } from '@/services/domainServices';
 import { createMockBackend } from '@/services/mock';
+import { createInitialDemoState, selectCompletedScans } from '@/services/mock/demoState';
 import { MOCK_DELAY_MS, MockTransport } from '@/services/transport';
+
+// The backend's starting state, so only the mock backend reads the sample data.
+const initialState = createInitialDemoState();
+const sampleProfile = initialState.profile;
+const firstScan = selectCompletedScans({ ...initialState, completedScanCount: 1 });
 
 function setup() {
   const transport = new MockTransport(createMockBackend());
@@ -71,7 +76,7 @@ describe('domain services', () => {
     const { plan, scans } = setup();
     const response = await settle(scans.completeScan());
     expect(response).toMatchObject({
-      completedScans: sampleHormoneScans.slice(0, 1),
+      completedScans: firstScan,
       canCompleteScan: true,
       chart: { completed: 1, remaining: 2 },
     });
@@ -86,6 +91,21 @@ describe('domain services', () => {
     expect(scans.cache.getState('/scans').data).toBeUndefined();
     await settle(write);
     expect(scans.cache.getState('/scans').data).toBeDefined();
+  });
+
+  it('prefetch fills only its own route in its own cache', async () => {
+    const { transport, profile, plan, scans } = setup();
+    const request = jest.spyOn(transport, 'request');
+    const prefetched = Promise.all([profile.prefetch(), plan.prefetch(), scans.prefetch()]);
+    await settle(prefetched);
+
+    expect(request.mock.calls.map(([call]) => call.route).sort()).toEqual(['/plan', '/profile', '/scans']);
+    expect(profile.cache.getState('/profile').data).toEqual(await settle(profile.getProfile()));
+    expect(plan.cache.getState('/plan').data).toEqual(await settle(plan.getPlan()));
+    expect(scans.cache.getState('/scans').data).toEqual(await settle(scans.getScans()));
+    expect(profile.cache.getState('/plan').data).toBeUndefined();
+    expect(plan.cache.getState('/scans').data).toBeUndefined();
+    expect(scans.cache.getState('/profile').data).toBeUndefined();
   });
 
   it('refresh makes mounted queries fetch their own route again', async () => {

@@ -1,6 +1,8 @@
-import type { StripType as PlanStripType } from '@/data/plan';
+import type { PlanDay, StripType as PlanStripType, ScanPlan } from '@/data/plan';
 import type { StripType } from '@/components/StripToken';
-import { useDemoState, type DemoStateValue } from '@/state/DemoStateProvider';
+import { currentCycleDay, currentPlanDay } from '@/hooks/currentDay';
+import { usePlanQuery, useProfileQuery, useScansQuery } from '@/hooks/useDemoQueries';
+import type { UnlockProgress } from '@/services/api';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -31,7 +33,13 @@ export interface TodayViewModel {
   };
 }
 
-type TodayState = Pick<DemoStateValue, 'plan' | 'currentPlanDay' | 'currentCycleDay' | 'usualScanTime' | 'chartProgress'>;
+interface TodayState {
+  plan: ScanPlan;
+  currentPlanDay: PlanDay;
+  currentCycleDay: number | null;
+  usualScanTime: string;
+  chartProgress: UnlockProgress;
+}
 
 // Plan dates are calendar dates, so read them as UTC to avoid time zone shifts.
 function parseDate(isoDate: string): Date {
@@ -77,7 +85,21 @@ export function buildTodayViewModel({
   };
 }
 
-export function useTodayViewModel(): TodayViewModel {
-  const state = useDemoState();
-  return buildTodayViewModel(state);
+/** Null until every query has data, so the screen renders nothing. */
+export function useTodayViewModel(): TodayViewModel | null {
+  const profile = useProfileQuery();
+  const plan = usePlanQuery();
+  const scans = useScansQuery();
+  if (!profile || !plan || !scans) {
+    return null;
+  }
+
+  const planDay = currentPlanDay(plan.plan, scans.completedScans.length, scans.canCompleteScan);
+  return buildTodayViewModel({
+    plan: plan.plan,
+    currentPlanDay: planDay,
+    currentCycleDay: currentCycleDay(plan.lastPeriodStart, planDay),
+    usualScanTime: profile.usualScanTime,
+    chartProgress: scans.chart,
+  });
 }

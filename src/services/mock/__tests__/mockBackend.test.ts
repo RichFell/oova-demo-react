@@ -8,7 +8,7 @@ import {
   selectChartProgress,
   selectPlan,
   selectReportProgress,
-} from '@/state/demoState';
+} from '@/services/mock/demoState';
 
 const { healthJourney, regularCycles, usualScanTime, lastPeriodStart, typicalBleedDays } = sampleProfile;
 const startingProfile = { healthJourney, regularCycles, usualScanTime };

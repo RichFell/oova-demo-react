@@ -1,25 +1,62 @@
-import { buildTodayViewModel, formatShortDate, formatWeekday } from '@/hooks/useTodayViewModel';
+import { currentCycleDay, currentPlanDay } from '@/hooks/currentDay';
+import { buildTodayViewModel, formatShortDate, formatWeekday, useTodayViewModel } from '@/hooks/useTodayViewModel';
 import {
   createInitialDemoState,
   demoReducer,
+  selectCanCompleteScan,
   selectChartProgress,
-  selectCurrentCycleDay,
-  selectCurrentPlanDay,
   selectPlan,
   type DemoAction,
-} from '@/state/demoState';
+} from '@/services/mock/demoState';
+import { useServices } from '@/services/ServicesProvider';
+import { FakeTransport, PendingTransport, renderWithServices } from '@/services/testing';
 
 function viewModelAfter(...actions: DemoAction[]) {
   const state = actions.reduce(demoReducer, createInitialDemoState());
   const plan = selectPlan(state);
+  const planDay = currentPlanDay(plan, state.completedScanCount, selectCanCompleteScan(state));
   return buildTodayViewModel({
     plan,
-    currentPlanDay: selectCurrentPlanDay(state, plan),
-    currentCycleDay: selectCurrentCycleDay(state, plan),
+    currentPlanDay: planDay,
+    currentCycleDay: currentCycleDay(state.profile.lastPeriodStart, planDay),
     usualScanTime: state.profile.usualScanTime,
     chartProgress: selectChartProgress(state),
   });
 }
+
+describe('useTodayViewModel', () => {
+  it('reads the profile, plan, and scans through the services', async () => {
+    const transport = new FakeTransport();
+    const { result } = await renderWithServices(useTodayViewModel, transport);
+    expect(result.current).toEqual(viewModelAfter());
+    expect(transport.requests.map(({ method, route }) => `${method} ${route}`).sort()).toEqual([
+      'GET /plan',
+      'GET /profile',
+      'GET /scans',
+    ]);
+  });
+
+  it('advances from the scan service write without another read', async () => {
+    const transport = new FakeTransport();
+    const { result, act } = await renderWithServices(
+      () => ({ services: useServices(), model: useTodayViewModel() }),
+      transport,
+    );
+    await act(() => {
+      void result.current.services.scans.completeScan();
+    });
+    expect(result.current.model).toEqual(viewModelAfter({ type: 'completeScan' }));
+    expect(transport.requests.filter(({ route }) => route === '/scans').map(({ method }) => method)).toEqual([
+      'GET',
+      'POST',
+    ]);
+  });
+
+  it('tells the screen to render nothing until the queries have data', async () => {
+    const { result } = await renderWithServices(useTodayViewModel, new PendingTransport());
+    expect(result.current).toBeNull();
+  });
+});
 
 describe('formatters', () => {
   it('formats calendar dates without time zone shifts', () => {

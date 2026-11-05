@@ -1,4 +1,12 @@
 import {
+  ROUTES,
+  type PlanResponse,
+  type PlanUpdate,
+  type ProfileResponse,
+  type ScansResponse,
+} from '../api';
+import type { RouteTable } from '../transport';
+import {
   createInitialDemoState,
   demoReducer,
   selectCanCompleteScan,
@@ -8,16 +16,7 @@ import {
   selectReportProgress,
   type DemoAction,
   type DemoState,
-} from '@/state/demoState';
-
-import {
-  ROUTES,
-  type PlanResponse,
-  type PlanUpdate,
-  type ProfileResponse,
-  type ScansResponse,
-} from '../api';
-import type { RouteTable } from '../transport';
+} from './demoState';
 
 /**
  * Holds its own in-memory demo state, starting from the sample data, and serves it as a route
