@@ -11,6 +11,8 @@ interface Entry {
   load?: () => Promise<unknown>;
   running?: Promise<void>;
   refetchWhenSettled: boolean;
+  /** Bumped by `set`, so a request that started earlier can't overwrite newer data. */
+  version: number;
   listeners: Set<Listener>;
 }
 
@@ -43,6 +45,13 @@ export class QueryCache {
     this.fetch(key, entry);
   }
 
+  /** Stores data from outside a query, such as a write's response. Mounted queries update without a request. */
+  set(key: string, data: unknown): void {
+    const entry = this.entry(key);
+    entry.version += 1;
+    this.update(entry, { data, isLoading: false, error: undefined });
+  }
+
   /** Mounted queries with these keys fetch again. Others fetch when they next mount. */
   invalidate(keys: string[]): void {
     keys.forEach((key) => {
@@ -63,7 +72,7 @@ export class QueryCache {
   private entry(key: string): Entry {
     let entry = this.entries.get(key);
     if (!entry) {
-      entry = { state: NOT_FETCHED, refetchWhenSettled: false, listeners: new Set() };
+      entry = { state: NOT_FETCHED, refetchWhenSettled: false, version: 0, listeners: new Set() };
       this.entries.set(key, entry);
     }
     return entry;
@@ -75,11 +84,20 @@ export class QueryCache {
       return;
     }
     entry.refetchWhenSettled = false;
+    const version = entry.version;
     this.update(entry, { ...entry.state, isLoading: true });
 
     entry.running = load().then(
-      (data) => this.update(entry, { data, isLoading: false, error: undefined }),
-      (error: unknown) => this.update(entry, { data: entry.state.data, isLoading: false, error }),
+      (data) => {
+        if (entry.version === version) {
+          this.update(entry, { data, isLoading: false, error: undefined });
+        }
+      },
+      (error: unknown) => {
+        if (entry.version === version) {
+          this.update(entry, { data: entry.state.data, isLoading: false, error });
+        }
+      },
     ).finally(() => {
       entry.running = undefined;
       if (entry.refetchWhenSettled && this.entries.get(key) === entry && entry.listeners.size > 0) {
