@@ -1,36 +1,30 @@
-import type { PlanDay, ScanPlan } from '@/data/plan';
+import type { ScanPlan } from '@/data/plan';
 import type { DemoProfile, SampleScan, UnlockProgress } from '@/state/demoState';
 
-/** Routes the services request, also used as client cache keys. */
+/** Routes the services request, also used as keys in each service's cache. */
 export const ROUTES = {
   profile: '/profile',
   plan: '/plan',
   scans: '/scans',
-  progress: '/progress',
   reset: '/reset',
 } as const;
 
-/** Every route with a `GET` response. */
-export const READ_ROUTES = [ROUTES.profile, ROUTES.plan, ROUTES.scans, ROUTES.progress];
-
-export type ProfileResponse = DemoProfile;
-
-/** Fields `PATCH /profile` can change. Fields left out stay as they are. */
-export type ProfileUpdate = Partial<Pick<DemoProfile, 'lastPeriodStart' | 'typicalBleedDays'>>;
+/** The profile without the period fields, which belong to the plan. */
+export type ProfileResponse = Omit<DemoProfile, 'lastPeriodStart' | 'typicalBleedDays'>;
 
 export interface PlanResponse {
   plan: ScanPlan;
-  currentPlanDay: PlanDay;
-  /** Null when the current plan day is before the last period start. */
-  currentCycleDay: number | null;
+  /** Local calendar date in YYYY-MM-DD format. */
+  lastPeriodStart: string;
+  typicalBleedDays: number;
 }
+
+/** Fields `PATCH /plan` can change. Fields left out stay as they are. */
+export type PlanUpdate = Partial<Pick<PlanResponse, 'lastPeriodStart' | 'typicalBleedDays'>>;
 
 export interface ScansResponse {
   completedScans: SampleScan[];
   canCompleteScan: boolean;
-}
-
-export interface ProgressResponse {
   chart: UnlockProgress;
   report: UnlockProgress;
 }

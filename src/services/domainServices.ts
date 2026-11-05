@@ -1,70 +1,73 @@
-import {
-  READ_ROUTES,
-  ROUTES,
-  type PlanResponse,
-  type ProfileResponse,
-  type ProfileUpdate,
-  type ProgressResponse,
-  type ScansResponse,
-} from './api';
-import type { QueryCache } from './queryCache';
+import { ROUTES, type PlanResponse, type PlanUpdate, type ProfileResponse, type ScansResponse } from './api';
+import { QueryCache } from './queryCache';
 import type { Transport } from './transport';
 
-/** The part of the client cache a service needs to mark routes stale after a write. */
-export type Invalidator = Pick<QueryCache, 'invalidate'>;
+/**
+ * Each service owns one route and its own cache. A write sets its own route from the response,
+ * so no service touches another's cache.
+ */
+abstract class CachedService {
+  readonly cache = new QueryCache();
 
-export class ProfileService {
-  constructor(
-    private readonly transport: Transport,
-    private readonly cache: Invalidator,
+  protected constructor(
+    protected readonly transport: Transport,
+    private readonly route: string,
   ) {}
+
+  /** Mounted queries fetch the route again, for example after the backend resets. */
+  refresh(): void {
+    this.cache.invalidate([this.route]);
+  }
+}
+
+export class ProfileService extends CachedService {
+  constructor(transport: Transport) {
+    super(transport, ROUTES.profile);
+  }
 
   getProfile(): Promise<ProfileResponse> {
     return this.transport.request({ method: 'GET', route: ROUTES.profile });
   }
-
-  async updateProfile(update: ProfileUpdate): Promise<ProfileResponse> {
-    const profile = await this.transport.request<ProfileResponse>({
-      method: 'PATCH',
-      route: ROUTES.profile,
-      body: update,
-    });
-    this.cache.invalidate([ROUTES.profile, ROUTES.plan]);
-    return profile;
-  }
-
-  /** Returns every route to the sample data. */
-  async reset(): Promise<void> {
-    await this.transport.request<void>({ method: 'POST', route: ROUTES.reset });
-    this.cache.invalidate([...READ_ROUTES]);
-  }
 }
 
-export class PlanService {
-  constructor(private readonly transport: Transport) {}
+export class PlanService extends CachedService {
+  constructor(transport: Transport) {
+    super(transport, ROUTES.plan);
+  }
 
   getPlan(): Promise<PlanResponse> {
     return this.transport.request({ method: 'GET', route: ROUTES.plan });
   }
+
+  async updatePlan(update: PlanUpdate): Promise<PlanResponse> {
+    const plan = await this.transport.request<PlanResponse>({ method: 'PATCH', route: ROUTES.plan, body: update });
+    this.cache.set(ROUTES.plan, plan);
+    return plan;
+  }
 }
 
-export class ScanService {
-  constructor(
-    private readonly transport: Transport,
-    private readonly cache: Invalidator,
-  ) {}
+export class ScanService extends CachedService {
+  constructor(transport: Transport) {
+    super(transport, ROUTES.scans);
+  }
 
   getScans(): Promise<ScansResponse> {
     return this.transport.request({ method: 'GET', route: ROUTES.scans });
   }
 
-  getProgress(): Promise<ProgressResponse> {
-    return this.transport.request({ method: 'GET', route: ROUTES.progress });
-  }
-
   async completeScan(): Promise<ScansResponse> {
     const scans = await this.transport.request<ScansResponse>({ method: 'POST', route: ROUTES.scans });
-    this.cache.invalidate([ROUTES.scans, ROUTES.plan, ROUTES.progress]);
+    this.cache.set(ROUTES.scans, scans);
     return scans;
+  }
+}
+
+/** Demo controls. It has no data of its own, so it has no cache. */
+export class DemoService {
+  constructor(private readonly transport: Transport) {}
+
+  /** Returns the backend to the sample data. Callers refresh the services they show. */
+  reset(): Promise<void> {
+    return this.transport.request({ method: 'POST', route: ROUTES.reset });
   }
 }

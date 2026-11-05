@@ -1,30 +1,34 @@
 import { createContext, use, useState, type ReactNode } from 'react';
 
-import { PlanService, ProfileService, ScanService } from './domainServices';
+import { DemoService, PlanService, ProfileService, ScanService } from './domainServices';
 import { createMockBackend } from './mock';
-import { QueryCache } from './queryCache';
 import { MockTransport, type Transport } from './transport';
 
 export interface Services {
   transport: Transport;
-  cache: QueryCache;
   profile: ProfileService;
   plan: PlanService;
   scans: ScanService;
+  demo: DemoService;
 }
 
 /** Builds the services on a transport, by default one backed by a new mock backend. */
 export function createServices(
   transport: Transport = new MockTransport(createMockBackend()),
-  cache: QueryCache = new QueryCache(),
 ): Services {
   return {
     transport,
-    cache,
-    profile: new ProfileService(transport, cache),
+    profile: new ProfileService(transport),
     plan: new PlanService(transport),
-    scans: new ScanService(transport, cache),
+    scans: new ScanService(transport),
+    demo: new DemoService(transport),
   };
+}
+
+/** Resets the backend, then has each service fetch its own route again. */
+export async function resetDemo({ demo, profile, plan, scans }: Services): Promise<void> {
+  await demo.reset();
+  [profile, plan, scans].forEach((service) => service.refresh());
 }
 
 const ServicesContext = createContext<Services | null>(null);
@@ -32,13 +36,12 @@ const ServicesContext = createContext<Services | null>(null);
 interface ServicesProviderProps {
   /** Replaces the mock transport, for tests and previews. */
   transport?: Transport;
-  cache?: QueryCache;
   children: ReactNode;
 }
 
-/** Builds the mock backend, transport, client cache, and services once for the app. */
-export function ServicesProvider({ transport, cache, children }: ServicesProviderProps) {
-  const [services] = useState(() => createServices(transport, cache));
+/** Builds the mock backend, transport, and services, each with its own cache, once for the app. */
+export function ServicesProvider({ transport, children }: ServicesProviderProps) {
+  const [services] = useState(() => createServices(transport));
 
   return <ServicesContext value={services}>{children}</ServicesContext>;
 }

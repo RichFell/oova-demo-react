@@ -121,4 +121,32 @@ describe('QueryCache', () => {
     expect(routes['/count'].GET).toHaveBeenCalledTimes(2);
     expect(cache.getState('/count')).toEqual({ data: 0, isLoading: false, error: undefined });
   });
+
+  it('updates mounted queries from set without a request', async () => {
+    const { routes, cache, mount } = setup();
+    const { listener } = mount('/count');
+    await jest.advanceTimersByTimeAsync(MOCK_DELAY_MS);
+    listener.mockClear();
+
+    cache.set('/count', 5);
+    expect(listener).toHaveBeenCalled();
+    expect(cache.getState('/count')).toEqual({ data: 5, isLoading: false, error: undefined });
+    expect(routes['/count'].GET).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves set data to a query that mounts later without a request', () => {
+    const { routes, cache, mount } = setup();
+    cache.set('/count', 5);
+    mount('/count');
+    expect(cache.getState('/count')).toEqual({ data: 5, isLoading: false, error: undefined });
+    expect(routes['/count'].GET).not.toHaveBeenCalled();
+  });
+
+  it('keeps set data when a request that started earlier settles', async () => {
+    const { cache, mount } = setup();
+    mount('/count');
+    cache.set('/count', 5);
+    await jest.advanceTimersByTimeAsync(MOCK_DELAY_MS);
+    expect(cache.getState('/count')).toEqual({ data: 5, isLoading: false, error: undefined });
+  });
 });

@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 
-import type { QueryState } from './queryCache';
-import { useServices } from './ServicesProvider';
+import type { QueryCache, QueryState } from './queryCache';
 
-/** Reads `key` from the shared cache, loading it with `load` when nothing has fetched it yet. */
-export function useQuery<T>(key: string, load: () => Promise<T>): QueryState<T> {
-  const { cache } = useServices();
+/** Reads `key` from a service's cache, loading it with `load` when nothing has fetched it yet. */
+export function useQuery<T>(cache: QueryCache, key: string, load: () => Promise<T>): QueryState<T> {
   const loadRef = useRef(load);
 
   useEffect(() => {

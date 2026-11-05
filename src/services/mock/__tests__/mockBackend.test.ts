@@ -6,11 +6,12 @@ import {
   createInitialDemoState,
   demoReducer,
   selectChartProgress,
-  selectCurrentCycleDay,
-  selectCurrentPlanDay,
   selectPlan,
   selectReportProgress,
 } from '@/state/demoState';
+
+const { healthJourney, regularCycles, usualScanTime, lastPeriodStart, typicalBleedDays } = sampleProfile;
+const startingProfile = { healthJourney, regularCycles, usualScanTime };
 
 function call(routes: RouteTable, method: HttpMethod, route: string, body?: unknown) {
   const handler = routes[route]?.[method];
@@ -25,99 +26,60 @@ function readAll(routes: RouteTable) {
     profile: call(routes, 'GET', ROUTES.profile),
     plan: call(routes, 'GET', ROUTES.plan),
     scans: call(routes, 'GET', ROUTES.scans),
-    progress: call(routes, 'GET', ROUTES.progress),
   };
 }
 
 describe('createMockBackend', () => {
   it('serves every route in the decision table', () => {
     const routes = createMockBackend();
-    expect(Object.keys(routes).sort()).toEqual(
-      ['/plan', '/profile', '/progress', '/reset', '/scans'],
-    );
-    expect(Object.keys(routes[ROUTES.profile]).sort()).toEqual(['GET', 'PATCH']);
-    expect(Object.keys(routes[ROUTES.plan])).toEqual(['GET']);
+    expect(Object.keys(routes).sort()).toEqual(['/plan', '/profile', '/reset', '/scans']);
+    expect(Object.keys(routes[ROUTES.profile])).toEqual(['GET']);
+    expect(Object.keys(routes[ROUTES.plan]).sort()).toEqual(['GET', 'PATCH']);
     expect(Object.keys(routes[ROUTES.scans]).sort()).toEqual(['GET', 'POST']);
-    expect(Object.keys(routes[ROUTES.progress])).toEqual(['GET']);
     expect(Object.keys(routes[ROUTES.reset])).toEqual(['POST']);
   });
 
-  it('GET /profile returns the sample profile', () => {
-    expect(call(createMockBackend(), 'GET', ROUTES.profile)).toEqual(sampleProfile);
+  it('GET /profile returns the sample profile without the period fields', () => {
+    expect(call(createMockBackend(), 'GET', ROUTES.profile)).toEqual(startingProfile);
   });
 
-  it('GET /plan returns the plan, current plan day, and current cycle day', () => {
-    const state = createInitialDemoState();
-    const plan = selectPlan(state);
+  it('GET /plan returns the plan and its period fields', () => {
     expect(call(createMockBackend(), 'GET', ROUTES.plan)).toEqual({
-      plan,
-      currentPlanDay: selectCurrentPlanDay(state, plan),
-      currentCycleDay: selectCurrentCycleDay(state, plan),
+      plan: selectPlan(createInitialDemoState()),
+      lastPeriodStart,
+      typicalBleedDays,
     });
   });
 
-  it('GET /scans returns no completed scans and that a scan can be completed', () => {
+  it('GET /scans returns no completed scans, that a scan can be completed, and unlock progress', () => {
+    const state = createInitialDemoState();
     expect(call(createMockBackend(), 'GET', ROUTES.scans)).toEqual({
       completedScans: [],
       canCompleteScan: true,
-    });
-  });
-
-  it('GET /progress returns chart and report unlock progress', () => {
-    const state = createInitialDemoState();
-    expect(call(createMockBackend(), 'GET', ROUTES.progress)).toEqual({
       chart: selectChartProgress(state),
       report: selectReportProgress(state),
     });
   });
 
-  it('PATCH /profile changes only the fields it is sent', () => {
+  it('PATCH /plan changes only the fields it is sent and returns the updated plan', () => {
     const routes = createMockBackend();
-    expect(call(routes, 'PATCH', ROUTES.profile, { typicalBleedDays: 6 })).toEqual({
-      ...sampleProfile,
+    expect(call(routes, 'PATCH', ROUTES.plan, { typicalBleedDays: 6 })).toMatchObject({
+      lastPeriodStart,
       typicalBleedDays: 6,
     });
-    expect(call(routes, 'PATCH', ROUTES.profile, { lastPeriodStart: '2026-11-01' })).toEqual({
-      ...sampleProfile,
-      lastPeriodStart: '2026-11-01',
-      typicalBleedDays: 6,
-    });
-    expect(call(routes, 'GET', ROUTES.profile)).toEqual({
-      ...sampleProfile,
-      lastPeriodStart: '2026-11-01',
-      typicalBleedDays: 6,
-    });
-  });
-
-  it('PATCH /profile is reflected by the next GET /plan', () => {
-    const routes = createMockBackend();
-    call(routes, 'PATCH', ROUTES.profile, { lastPeriodStart: '2026-11-01', typicalBleedDays: 6 });
 
     let state = createInitialDemoState();
     state = demoReducer(state, { type: 'setLastPeriodStart', date: '2026-11-01' });
     state = demoReducer(state, { type: 'setTypicalBleedDays', days: 6 });
-    const plan = selectPlan(state);
+    const expected = { plan: selectPlan(state), lastPeriodStart: '2026-11-01', typicalBleedDays: 6 };
 
-    const response = call(routes, 'GET', ROUTES.plan);
-    expect(response).toEqual({
-      plan,
-      currentPlanDay: selectCurrentPlanDay(state, plan),
-      currentCycleDay: selectCurrentCycleDay(state, plan),
-    });
-    expect(response).not.toEqual(call(createMockBackend(), 'GET', ROUTES.plan));
+    expect(call(routes, 'PATCH', ROUTES.plan, { lastPeriodStart: '2026-11-01' })).toEqual(expected);
+    expect(call(routes, 'GET', ROUTES.plan)).toEqual(expected);
+    expect(call(routes, 'GET', ROUTES.profile)).toEqual(startingProfile);
   });
 
-  it('POST /scans completes the next scan and returns the updated scans', () => {
+  it('POST /scans completes the next scan and returns the updated scans and progress', () => {
     const routes = createMockBackend();
-    expect(call(routes, 'POST', ROUTES.scans)).toEqual({
-      completedScans: sampleHormoneScans.slice(0, 1),
-      canCompleteScan: true,
-    });
-  });
-
-  it('POST /scans is reflected by the next GET /scans, /plan, and /progress', () => {
-    const routes = createMockBackend();
-    call(routes, 'POST', ROUTES.scans);
     call(routes, 'POST', ROUTES.scans);
     call(routes, 'POST', ROUTES.scans);
 
@@ -125,27 +87,21 @@ describe('createMockBackend', () => {
     for (let i = 0; i < 3; i += 1) {
       state = demoReducer(state, { type: 'completeScan' });
     }
-    const plan = selectPlan(state);
-
-    expect(call(routes, 'GET', ROUTES.scans)).toEqual({
+    const expected = {
       completedScans: sampleHormoneScans.slice(0, 3),
       canCompleteScan: true,
-    });
-    expect(call(routes, 'GET', ROUTES.progress)).toEqual({
       chart: selectChartProgress(state),
       report: selectReportProgress(state),
-    });
-    expect(call(routes, 'GET', ROUTES.plan)).toEqual({
-      plan,
-      currentPlanDay: selectCurrentPlanDay(state, plan),
-      currentCycleDay: selectCurrentCycleDay(state, plan),
-    });
+    };
+
+    expect(call(routes, 'POST', ROUTES.scans)).toEqual(expected);
+    expect(call(routes, 'GET', ROUTES.scans)).toEqual(expected);
   });
 
   it('POST /scans stops completing scans once the sample data is used', () => {
     const routes = createMockBackend();
     sampleHormoneScans.forEach(() => call(routes, 'POST', ROUTES.scans));
-    expect(call(routes, 'POST', ROUTES.scans)).toEqual({
+    expect(call(routes, 'POST', ROUTES.scans)).toMatchObject({
       completedScans: [...sampleHormoneScans],
       canCompleteScan: false,
     });
@@ -154,7 +110,7 @@ describe('createMockBackend', () => {
   it('POST /reset returns nothing and every route to its starting response', () => {
     const routes = createMockBackend();
     const start = readAll(routes);
-    call(routes, 'PATCH', ROUTES.profile, { lastPeriodStart: '2026-11-01', typicalBleedDays: 6 });
+    call(routes, 'PATCH', ROUTES.plan, { lastPeriodStart: '2026-11-01', typicalBleedDays: 6 });
     call(routes, 'POST', ROUTES.scans);
     expect(readAll(routes)).not.toEqual(start);
 
@@ -165,7 +121,7 @@ describe('createMockBackend', () => {
   it('starts each backend from the sample data on its own', () => {
     const first = createMockBackend();
     const start = readAll(first);
-    call(first, 'PATCH', ROUTES.profile, { typicalBleedDays: 6 });
+    call(first, 'PATCH', ROUTES.plan, { typicalBleedDays: 6 });
     call(first, 'POST', ROUTES.scans);
 
     expect(readAll(createMockBackend())).toEqual(start);
@@ -173,8 +129,8 @@ describe('createMockBackend', () => {
 
   it('does not let a returned profile change the backend state', () => {
     const routes = createMockBackend();
-    const profile = call(routes, 'GET', ROUTES.profile) as { typicalBleedDays: number };
-    profile.typicalBleedDays = 9;
-    expect(call(routes, 'GET', ROUTES.profile)).toEqual(sampleProfile);
+    const profile = call(routes, 'GET', ROUTES.profile) as { usualScanTime: string };
+    profile.usualScanTime = 'changed';
+    expect(call(routes, 'GET', ROUTES.profile)).toEqual(startingProfile);
   });
 });

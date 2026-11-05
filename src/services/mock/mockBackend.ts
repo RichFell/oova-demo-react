@@ -4,8 +4,6 @@ import {
   selectCanCompleteScan,
   selectChartProgress,
   selectCompletedScans,
-  selectCurrentCycleDay,
-  selectCurrentPlanDay,
   selectPlan,
   selectReportProgress,
   type DemoAction,
@@ -15,9 +13,8 @@ import {
 import {
   ROUTES,
   type PlanResponse,
+  type PlanUpdate,
   type ProfileResponse,
-  type ProfileUpdate,
-  type ProgressResponse,
   type ScansResponse,
 } from '../api';
 import type { RouteTable } from '../transport';
@@ -33,42 +30,39 @@ export function createMockBackend(): RouteTable {
     state = demoReducer(state, action);
   };
 
-  const profile = (): ProfileResponse => ({ ...state.profile });
-
-  const plan = (): PlanResponse => {
-    const scanPlan = selectPlan(state);
-    return {
-      plan: scanPlan,
-      currentPlanDay: selectCurrentPlanDay(state, scanPlan),
-      currentCycleDay: selectCurrentCycleDay(state, scanPlan),
-    };
+  const profile = (): ProfileResponse => {
+    const { healthJourney, regularCycles, usualScanTime } = state.profile;
+    return { healthJourney, regularCycles, usualScanTime };
   };
+
+  const plan = (): PlanResponse => ({
+    plan: selectPlan(state),
+    lastPeriodStart: state.profile.lastPeriodStart,
+    typicalBleedDays: state.profile.typicalBleedDays,
+  });
 
   const scans = (): ScansResponse => ({
     completedScans: selectCompletedScans(state),
     canCompleteScan: selectCanCompleteScan(state),
-  });
-
-  const progress = (): ProgressResponse => ({
     chart: selectChartProgress(state),
     report: selectReportProgress(state),
   });
 
   return {
-    [ROUTES.profile]: {
-      GET: profile,
+    [ROUTES.profile]: { GET: profile },
+    [ROUTES.plan]: {
+      GET: plan,
       PATCH: (body) => {
-        const update = (body ?? {}) as ProfileUpdate;
+        const update = (body ?? {}) as PlanUpdate;
         if (update.lastPeriodStart !== undefined) {
           dispatch({ type: 'setLastPeriodStart', date: update.lastPeriodStart });
         }
         if (update.typicalBleedDays !== undefined) {
           dispatch({ type: 'setTypicalBleedDays', days: update.typicalBleedDays });
         }
-        return profile();
+        return plan();
       },
     },
-    [ROUTES.plan]: { GET: plan },
     [ROUTES.scans]: {
       GET: scans,
       POST: () => {
@@ -76,7 +70,6 @@ export function createMockBackend(): RouteTable {
         return scans();
       },
     },
-    [ROUTES.progress]: { GET: progress },
     [ROUTES.reset]: {
       POST: () => {
         dispatch({ type: 'reset' });
