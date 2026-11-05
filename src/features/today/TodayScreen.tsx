@@ -21,9 +21,9 @@ export const TodayScreen = () => {
                     eyebrow={heroEyebrow}
                     title={heroTitle}
                     body={heroBody}
-                    onPress={navigateToScan}
+                    onPress={() => navigateToScan('manual')}
                 />
-                <NextFiveDaysCard days={upcomingDays} onViewPlan={navigateToScan} />
+                <NextFiveDaysCard days={upcomingDays} onViewPlan={() => navigateToScan()} />
                 {chart.locked && (
                     <ChartLockCard
                         required={chart.required}
