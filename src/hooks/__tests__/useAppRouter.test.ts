@@ -7,7 +7,7 @@ jest.mock('expo-router', () => ({
 }));
 
 describe('useAppRouter', () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(() => jest.clearAllMocks());
 
   it('opens scan setup', () => {
     useAppRouter().navigateToScan();

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Screen } from '@/components/Screen';
@@ -28,7 +28,9 @@ export const PlanScreen = ({ initialMode = 'guided' }: PlanScreenProps) => {
     const header = buildScanSetupHeader(mode, { title, subtitle });
 
     return (
-        <Screen edges={['top', 'left', 'right']}>
+        // On iOS the native header sits over the content, so iOS insets the scroll view for it and the home indicator.
+        // Android has no header here, so the top edge keeps content below the status bar.
+        <Screen edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']} contentInsetAdjustmentBehavior="automatic">
             <View style={styles.header}>
                 <StepProgress total={SCAN_STEP_COUNT} completed={header.completedSteps} />
                 <AppText variant="title" accessibilityRole="header" style={styles.title}>
