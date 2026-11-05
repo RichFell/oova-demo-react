@@ -2,14 +2,18 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Screen } from '@/components/Screen';
+import { PlanAnswersCard } from '@/features/plan/PlanAnswersCard';
 import { PlanDayDetailsCard } from '@/features/plan/PlanDayDetailsCard';
+import { PlanStripsCard } from '@/features/plan/PlanStripsCard';
 import { PlanTimeline } from '@/features/plan/PlanTimeline';
+import { usePlanAnswersViewModel } from '@/hooks/usePlanAnswersViewModel';
 import { usePlanViewModel } from '@/hooks/usePlanViewModel';
 import { colors, radii, spacing } from '@/theme/tokens';
 
 // The schedule comes before any explanatory text.
 export const PlanScreen = () => {
     const { title, subtitle, days, showPeriodLegend, details, selectDay } = usePlanViewModel();
+    const answers = usePlanAnswersViewModel();
 
     return (
         <Screen>
@@ -21,6 +25,8 @@ export const PlanScreen = () => {
             </View>
             <PlanTimeline days={days} showPeriodLegend={showPeriodLegend} onSelectDay={selectDay} />
             <PlanDayDetailsCard {...details} />
+            <PlanAnswersCard {...answers} />
+            <PlanStripsCard strips={answers.strips} />
         </Screen>
     );
 };
