@@ -12,7 +12,11 @@ import { spacing } from '@/theme/tokens';
 // The bottom action sits outside the scroll view so it stays above the tab bar on short screens.
 export const TodayScreen = () => {
     const { navigateToScan } = useAppRouter();
-    const { heroEyebrow, heroTitle, heroBody, upcomingDays, chart } = useTodayViewModel();
+    const model = useTodayViewModel();
+    if (!model) {
+        return null;
+    }
+    const { heroEyebrow, heroTitle, heroBody, upcomingDays, chart } = model;
 
     return (
         <Screen scroll={false} edges={['top', 'left', 'right']} style={styles.screen}>

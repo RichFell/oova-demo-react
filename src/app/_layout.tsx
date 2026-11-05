@@ -7,10 +7,10 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { DemoStateProvider } from '@/state/DemoStateProvider';
+import { ServicesProvider, prefetchServices, useServices } from '@/services/ServicesProvider';
 import { colors, fonts } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,12 +21,35 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  return (
+    <ServicesProvider>
+      <RootStack />
+    </ServicesProvider>
+  );
+}
+
+// The splash screen stays up until the fonts load and each service has its data cached.
+function RootStack() {
+  const services = useServices();
   const [loaded, error] = useFonts({
     [fonts.regular]: Outfit_400Regular,
     [fonts.medium]: Outfit_500Medium,
     [fonts.semiBold]: Outfit_600SemiBold,
   });
-  const ready = loaded || error !== null;
+  const [prefetched, setPrefetched] = useState(false);
+  const ready = (loaded || error !== null) && prefetched;
+
+  useEffect(() => {
+    let active = true;
+    prefetchServices(services).then(() => {
+      if (active) {
+        setPrefetched(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [services]);
 
   useEffect(() => {
     if (ready) {
@@ -39,7 +62,7 @@ export default function RootLayout() {
   }
 
   return (
-    <DemoStateProvider>
+    <>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -58,6 +81,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </DemoStateProvider>
+    </>
   );
 }

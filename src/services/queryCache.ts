@@ -45,6 +45,22 @@ export class QueryCache {
     this.fetch(key, entry);
   }
 
+  /**
+   * Loads the key before any query mounts, for example at startup. Settles once the key's data is
+   * stored, shares a request already running for the key, and settles at once when data is cached.
+   */
+  prefetch(key: string, load: () => Promise<unknown>): Promise<void> {
+    const entry = this.entry(key);
+    entry.load = load;
+    if (entry.running) {
+      return entry.running;
+    }
+    if (entry.state.data !== undefined) {
+      return Promise.resolve();
+    }
+    return this.fetch(key, entry) ?? Promise.resolve();
+  }
+
   /** Stores data from outside a query, such as a write's response. Mounted queries update without a request. */
   set(key: string, data: unknown): void {
     const entry = this.entry(key);
@@ -78,10 +94,10 @@ export class QueryCache {
     return entry;
   }
 
-  private fetch(key: string, entry: Entry): void {
+  private fetch(key: string, entry: Entry): Promise<void> | undefined {
     const load = entry.load;
     if (!load) {
-      return;
+      return undefined;
     }
     entry.refetchWhenSettled = false;
     const version = entry.version;
@@ -104,6 +120,7 @@ export class QueryCache {
         this.fetch(key, entry);
       }
     });
+    return entry.running;
   }
 
   private update(entry: Entry, state: QueryState<unknown>): void {

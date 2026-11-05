@@ -2,8 +2,9 @@ import { useState } from 'react';
 
 import type { ScanPlan } from '@/data/plan';
 import type { StripType } from '@/components/StripToken';
+import { currentPlanDay } from '@/hooks/currentDay';
+import { usePlanQuery, useScansQuery } from '@/hooks/useDemoQueries';
 import { STRIP_TOKENS, formatShortDate, formatWeekday } from '@/hooks/useTodayViewModel';
-import { useDemoState } from '@/state/DemoStateProvider';
 
 const PERIOD_DAY_NOTE = 'This is an expected period day.';
 
@@ -65,13 +66,19 @@ export function buildPlanViewModel(plan: ScanPlan, selectedDate: string): PlanVi
   };
 }
 
-// Selection is view state only; plan data always comes from the demo state.
+// Selection is view state only; plan data always comes from the plan service. Until a day is
+// tapped, the current plan day is selected. Null until every query has data.
 export function usePlanViewModel() {
-  const { plan, currentPlanDay } = useDemoState();
-  const [selectedDate, setSelectedDate] = useState(currentPlanDay.date);
+  const plan = usePlanQuery();
+  const scans = useScansQuery();
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  if (!plan || !scans) {
+    return null;
+  }
 
+  const today = currentPlanDay(plan.plan, scans.completedScans.length, scans.canCompleteScan);
   return {
-    ...buildPlanViewModel(plan, selectedDate),
+    ...buildPlanViewModel(plan.plan, selectedDate ?? today.date),
     selectDay: setSelectedDate,
   };
 }

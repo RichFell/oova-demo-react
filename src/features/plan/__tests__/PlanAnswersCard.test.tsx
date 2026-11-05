@@ -2,7 +2,7 @@ import { isValidElement, type ReactElement, type ReactNode } from 'react';
 
 import { PlanAnswersCard, type PlanAnswersCardProps } from '@/features/plan/PlanAnswersCard';
 import { buildPlanAnswersViewModel } from '@/hooks/usePlanAnswersViewModel';
-import { createInitialDemoState, selectPlan } from '@/state/demoState';
+import { createInitialDemoState, selectPlan } from '@/services/mock/demoState';
 
 type Props = {
   children?: ReactNode;
@@ -24,6 +24,8 @@ function findAll(node: ReactNode, match: (element: ReactElement<Props>) => boole
 
 function renderCard(editing: boolean) {
   const state = createInitialDemoState();
+  const { lastPeriodStart, typicalBleedDays } = state.profile;
+  const plan = { plan: selectPlan(state), lastPeriodStart, typicalBleedDays };
   const handlers = {
     toggleEditing: jest.fn(),
     decreaseLastPeriod: jest.fn(),
@@ -32,7 +34,7 @@ function renderCard(editing: boolean) {
     increaseBleeding: jest.fn(),
   };
   const props: PlanAnswersCardProps = {
-    ...buildPlanAnswersViewModel({ profile: state.profile, plan: selectPlan(state), today: '2026-11-03', editing }),
+    ...buildPlanAnswersViewModel({ profile: state.profile, plan, today: '2026-11-03', editing }),
     ...handlers,
   };
   const root = PlanAnswersCard(props);

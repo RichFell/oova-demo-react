@@ -142,6 +142,44 @@ describe('QueryCache', () => {
     expect(routes['/count'].GET).not.toHaveBeenCalled();
   });
 
+  it('prefetch settles once the data is stored, and a later query reads it without a request', async () => {
+    const { routes, transport, cache, mount } = setup();
+    const settled = jest.fn();
+    cache.prefetch('/count', () => transport.request({ method: 'GET', route: '/count' })).then(settled);
+
+    await jest.advanceTimersByTimeAsync(MOCK_DELAY_MS - 1);
+    expect(settled).not.toHaveBeenCalled();
+    expect(cache.getState('/count').data).toBeUndefined();
+
+    await jest.advanceTimersByTimeAsync(1);
+    expect(settled).toHaveBeenCalled();
+    expect(cache.getState('/count')).toEqual({ data: 0, isLoading: false, error: undefined });
+
+    mount('/count');
+    expect(cache.getState('/count')).toEqual({ data: 0, isLoading: false, error: undefined });
+    expect(routes['/count'].GET).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefetch shares a request already running for the key', async () => {
+    const { routes, transport, cache, mount } = setup();
+    mount('/count');
+    const first = cache.prefetch('/count', () => transport.request({ method: 'GET', route: '/count' }));
+    const second = cache.prefetch('/count', () => transport.request({ method: 'GET', route: '/count' }));
+
+    await jest.advanceTimersByTimeAsync(MOCK_DELAY_MS);
+    await Promise.all([first, second]);
+    expect(routes['/count'].GET).toHaveBeenCalledTimes(1);
+    expect(cache.getState('/count').data).toBe(0);
+  });
+
+  it('prefetch settles at once without a request when the key has data', async () => {
+    const { routes, transport, cache } = setup();
+    cache.set('/count', 5);
+    await cache.prefetch('/count', () => transport.request({ method: 'GET', route: '/count' }));
+    expect(routes['/count'].GET).not.toHaveBeenCalled();
+    expect(cache.getState('/count').data).toBe(5);
+  });
+
   it('keeps set data when a request that started earlier settles', async () => {
     const { cache, mount } = setup();
     mount('/count');

@@ -31,6 +31,11 @@ export async function resetDemo({ demo, profile, plan, scans }: Services): Promi
   [profile, plan, scans].forEach((service) => service.refresh());
 }
 
+/** Settles once each service has loaded its own route into its own cache. */
+export async function prefetchServices({ profile, plan, scans }: Services): Promise<void> {
+  await Promise.all([profile.prefetch(), plan.prefetch(), scans.prefetch()]);
+}
+
 const ServicesContext = createContext<Services | null>(null);
 
 interface ServicesProviderProps {

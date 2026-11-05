@@ -26,6 +26,8 @@ Don't skip, weaken, or delete tests, and don't change the `verify` script withou
 - `src/app`: Expo Router screens
 - `src/features`: feature components
 - `src/hooks`: view-model and navigation hooks
+- `src/services`: transport, services, and query caches. View models read through `useQuery` with each service's own cache and change state only through service writes.
+- `src/services/mock/`: the mock backend, which holds the demo state, reducer, and selectors. No file outside `src/services/mock/` and `src/data/__tests__/` imports `src/data/sample.ts`.
 - `src/theme/tokens.ts`: design tokens. Don't add colors, spacing, or type styles without a ticket.
 - `src/data/plan.ts`: scan plan builder. Supports only the 30-day plan.
 - `src/data/sample.ts`: fictional profile, chart, and unlock data

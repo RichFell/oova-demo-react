@@ -1,7 +1,7 @@
 import { use } from 'react';
 
 import { DemoService, PlanService, ProfileService, ScanService } from '@/services/domainServices';
-import { createServices, resetDemo, useServices } from '@/services/ServicesProvider';
+import { createServices, prefetchServices, resetDemo, useServices } from '@/services/ServicesProvider';
 import { MOCK_DELAY_MS, MockTransport } from '@/services/transport';
 
 describe('createServices', () => {
@@ -25,6 +25,27 @@ describe('createServices', () => {
   it('uses the transport passed in', () => {
     const transport = new MockTransport({});
     expect(createServices(transport).transport).toBe(transport);
+  });
+});
+
+describe('prefetchServices', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('settles once each service has prefetched its own route', async () => {
+    jest.useFakeTimers();
+    const services = createServices();
+    const settled = jest.fn();
+    prefetchServices(services).then(settled);
+
+    await jest.advanceTimersByTimeAsync(MOCK_DELAY_MS - 1);
+    expect(settled).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(settled).toHaveBeenCalled();
+    expect(services.profile.cache.getState('/profile').data).toBeDefined();
+    expect(services.plan.cache.getState('/plan').data).toBeDefined();
+    expect(services.scans.cache.getState('/scans').data).toBeDefined();
   });
 });
 

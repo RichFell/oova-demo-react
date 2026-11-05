@@ -1,5 +1,7 @@
 import type { ScanPlan } from '@/data/plan';
-import type { DemoProfile, SampleScan, UnlockProgress } from '@/state/demoState';
+import type { DemoProfile, SampleScan, UnlockProgress } from './mock/demoState';
+
+export type { UnlockProgress };
 
 /** Routes the services request, also used as keys in each service's cache. */
 export const ROUTES = {

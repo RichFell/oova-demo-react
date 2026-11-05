@@ -3,7 +3,7 @@ import type { PressableProps } from 'react-native';
 
 import { PlanTimeline } from '@/features/plan/PlanTimeline';
 import { buildPlanViewModel } from '@/hooks/usePlanViewModel';
-import { createInitialDemoState, selectPlan } from '@/state/demoState';
+import { createInitialDemoState, selectPlan } from '@/services/mock/demoState';
 
 type Element = ReactElement<{ children?: unknown }>;
 

@@ -1,10 +1,37 @@
 import { buildPlanViewModel } from '@/hooks/usePlanViewModel';
-import { SCAN_STEP_COUNT, buildManualScanSetup, buildScanSetupHeader } from '@/hooks/useScanSetupViewModel';
-import { createInitialDemoState, selectCurrentPlanDay, selectPlan } from '@/state/demoState';
+import {
+  SCAN_STEP_COUNT,
+  buildManualScanSetup,
+  buildScanSetupHeader,
+  useScanSetupViewModel,
+} from '@/hooks/useScanSetupViewModel';
+import { createInitialDemoState, selectCurrentPlanDay, selectPlan } from '@/services/mock/demoState';
+import { FakeTransport, PendingTransport, renderWithServices } from '@/services/testing';
 
 const state = createInitialDemoState();
 const plan = selectPlan(state);
 const planModel = buildPlanViewModel(plan, plan.startDate);
+
+describe('useScanSetupViewModel', () => {
+  it("reads the current plan day's strips through the services", async () => {
+    const { result } = await renderWithServices(() => useScanSetupViewModel('manual'), new FakeTransport());
+    expect(result.current).toMatchObject({
+      mode: 'manual',
+      manual: { stripsTitle: 'E3G + LH | PdG', strips: ['LH | PdG', 'E3G'] },
+    });
+  });
+
+  it('switches mode', async () => {
+    const { result, act } = await renderWithServices(() => useScanSetupViewModel('manual'), new FakeTransport());
+    await act(() => result.current?.setMode('guided'));
+    expect(result.current?.mode).toBe('guided');
+  });
+
+  it('tells the screen to render nothing until the queries have data', async () => {
+    const { result } = await renderWithServices(() => useScanSetupViewModel('guided'), new PendingTransport());
+    expect(result.current).toBeNull();
+  });
+});
 
 describe('scan setup header', () => {
   it('shows the plan title, dates, and full progress in Guided', () => {
