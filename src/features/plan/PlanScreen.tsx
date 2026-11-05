@@ -28,7 +28,7 @@ export const PlanScreen = ({ initialMode = 'guided' }: PlanScreenProps) => {
     const header = buildScanSetupHeader(mode, { title, subtitle });
 
     return (
-        <Screen>
+        <Screen edges={['top', 'left', 'right']}>
             <View style={styles.header}>
                 <StepProgress total={SCAN_STEP_COUNT} completed={header.completedSteps} />
                 <AppText variant="title" accessibilityRole="header" style={styles.title}>
